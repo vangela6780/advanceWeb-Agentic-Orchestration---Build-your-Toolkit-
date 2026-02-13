@@ -7,3 +7,8 @@ dist/
 .DS_Store
 .vscode/launch.json
 coverage/
+
+# AI-generated output folders
+research/
+images/
+screenshots/

@@ -1,6 +1,10 @@
 import { CLIBootstrap } from './application/bootstrap';
 import { CLIOutputFormatter } from './infrastructure/validators';
 import { IOHandler, Logger } from './domain/types';
+import { WebSearchPlugin } from './plugins/webSearchPlugin';
+import { ImageGeneratorPlugin } from './plugins/imageGeneratorPlugin';
+import { ScreenshotAnalyzerPlugin } from './plugins/screenshotAnalyzerPlugin';
+import { CalculatorPlugin } from './plugins/calculatorPlugin';
 
 /**
  * Main entry point for the CLI application
@@ -13,6 +17,14 @@ async function main(): Promise<void> {
     const logger = container.get('logger') as Logger;
     const ioHandler = container.get('ioHandler') as IOHandler;
     const outputFormatter = new CLIOutputFormatter();
+
+    // Load plugins
+    logger.info('Loading plugins...');
+    await pluginManager.loadPlugin('webSearch', new WebSearchPlugin());
+    await pluginManager.loadPlugin('imageGenerator', new ImageGeneratorPlugin());
+    await pluginManager.loadPlugin('screenshotAnalyzer', new ScreenshotAnalyzerPlugin());
+    await pluginManager.loadPlugin('calculator', new CalculatorPlugin());
+    logger.info('All plugins loaded successfully');
 
     // Get command-line arguments (skip node and script path)
     const args = process.argv.slice(2);

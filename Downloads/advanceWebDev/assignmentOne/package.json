@@ -10,15 +10,23 @@
     "test": "jest",
     "lint": "eslint src --ext .ts"
   },
-  "keywords": ["cli", "solid", "agent", "ai"],
+  "keywords": [
+    "cli",
+    "solid",
+    "agent",
+    "ai"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.0.3"
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^16.0.3",
+    "openai": "^6.21.0",
+    "playwright": "^1.58.2"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
     "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",

@@ -2,6 +2,41 @@
 
 A professional, extensible CLI tool built with **SOLID principles** by Uncle Bob Martin. Designed for AI agent integration, with a clean architecture that separates concerns and enables easy extension.
 
+## 🚀 AI-Powered Features
+
+This toolkit includes three powerful AI-driven plugins:
+
+### 1. 🔍 Web Search Agent (OpenAI)
+Research any topic with up-to-date information using OpenAI's advanced search capabilities.
+```bash
+npm run dev search "latest trends in web development" --output research.md
+```
+- Conducts online research with current information
+- Generates comprehensive research documents
+- Saves results to the `research/` folder in Markdown format
+
+### 2. 🎨 Image Generator (DALL-E 3)
+Create professional images and assets for websites using OpenAI's DALL-E 3.
+```bash
+npm run dev generate-image "modern minimalist website hero image" --size 1024x1024 --quality hd
+```
+- Generates high-quality images (standard or HD)
+- Multiple size options: 1024x1024, 1024x1792, 1792x1024
+- Automatically saves to `images/` folder
+- Includes metadata (prompt, revised prompt, settings)
+- Cost: ~$0.04-$0.12 per image
+
+### 3. 📸 Screenshot Analyzer (Playwright + Gemini)
+Capture website screenshots and receive AI-powered design feedback from Google's Gemini.
+```bash
+npm run dev analyze-website https://example.com --fullpage
+```
+- Takes professional website screenshots using Playwright
+- AI analysis covering design, UX, typography, colors, and accessibility
+- Detailed feedback on strengths and improvement areas
+- Saves screenshots to `screenshots/` folder
+- Analysis saved as Markdown reports
+
 ## Architecture Overview
 
 ### SOLID Principles Applied
@@ -101,11 +136,36 @@ External system integration.
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js (v16 or higher)
+- npm or yarn
+- OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
+- Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
+
 ### Installation
 
 ```bash
+# Install dependencies
 npm install
+
+# Install Playwright browsers
+npx playwright install chromium
 ```
+
+### Configuration
+
+Create a `.env` file in the root directory:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+⚠️ **Important**: 
+- You'll need to add ~$5 to both OpenAI and Gemini accounts for API access
+- Image generation costs: $0.04-$0.12 per image depending on quality
+- Keep your API keys secure and never commit them to git
 
 ### Build
 
@@ -124,6 +184,15 @@ npm run dev
 ```bash
 # Show help
 node dist/index.js help
+
+# Web Search
+npm run dev search "artificial intelligence trends 2026" --output ai-trends.md
+
+# Generate Image  
+npm run dev generate-image "professional website header background" --size 1024x1792 --quality hd
+
+# Analyze Website
+npm run dev analyze-website https://www.example.com --fullpage
 
 # Show version
 node dist/index.js version
@@ -279,6 +348,31 @@ eventEmitter.on('plugin:loaded', ({ pluginName }) => {
 });
 ```
 
+## Available Commands
+
+### Built-in Commands
+- `help` - Display help information
+- `version` - Show version information
+- `status` - Show system status and registered commands
+- `echo <message>` - Echo a message back
+
+### AI-Powered Plugin Commands
+- `search <query> [--output <filename>]` - Web research using OpenAI
+- `generate-image <prompt> [--size <size>] [--quality <standard|hd>] [--output <filename>]` - Generate images with DALL-E 3
+- `analyze-website <url> [--fullpage] [--output <filename>]` - Screenshot and analyze websites with Gemini
+
+### Calculator Plugin Commands (Example)
+- `add <num1> <num2>` - Add two numbers
+- `subtract <num1> <num2>` - Subtract two numbers
+- `multiply <num1> <num2>` - Multiply two numbers
+
+## Output Folders
+
+The toolkit automatically creates these folders:
+- `research/` - Web search results (Markdown files)
+- `images/` - Generated images (PNG) with metadata (JSON)
+- `screenshots/` - Website screenshots (PNG) with analysis (Markdown)
+
 ## Testing
 
 Use `MockIOHandler` for testing:
@@ -345,12 +439,23 @@ throw new ConfigError('Config failed', 'Cause details');
 throw new ToolError('Tool execution failed', { details: 'info' });
 ```
 
+## Implemented Features ✅
+
+- **Web Search Tool**: OpenAI-powered online research with document generation
+- **Image Generation**: DALL-E 3 integration for creating visual assets
+- **Screenshot & Analysis**: Playwright + Gemini for website design feedback
+- **Plugin System**: Extensible architecture for adding new tools
+- **SOLID Architecture**: Clean, maintainable, and testable code
+- **Dependency Injection**: Service container for loose coupling
+- **Event System**: Publish/subscribe for extensibility
+
 ## Future Extensions
 
 The architecture is designed to easily support:
 
-- **Web Tools**: HTTP client/server integration
-- **Screenshot Tools**: Image capture and processing
+- **Database Tools**: Data queries and management
+- **API Integration**: REST/GraphQL client tools
+- **Code Generation**: Scaffolding and boilerplate creation
 - **File Tools**: Advanced file manipulation
 - **Data Analysis**: Data processing pipelines
 - **API Integrations**: Third-party service connections
