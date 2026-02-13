@@ -1,0 +1,497 @@
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║              AI CLI Engine - SOLID Architecture Overview                ║
+║                         (Uncle Bob's Principles)                         ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         ENTRY POINT (src/index.ts)                       │
+│                  ┌──────────────────────────────────────┐                │
+│                  │  main()                              │                │
+│                  │  ├─ Bootstrap CLI                     │                │
+│                  │  ├─ Parse arguments                   │                │
+│                  │  ├─ Execute command                   │                │
+│                  │  └─ Output result                     │                │
+│                  └──────────────────────────────────────┘                │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       LAYER 1: DOMAIN (Business Logic)                   │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  domain/types.ts                                                  │   │
+│  │                                                                    │   │
+│  │  Abstract Classes:                                                │   │
+│  │  ├─ Command (abstract)                                            │   │
+│  │  │  ├─ name: string                                               │   │
+│  │  │  ├─ description: string                                        │   │
+│  │  │  ├─ validate(): ValidationResult                               │   │
+│  │  │  └─ execute(): CommandResult                                   │   │
+│  │  │                                                                │   │
+│  │  │  Notable Implementations:                                     │   │
+│  │  │  ├─ HelpCommand, VersionCommand, StatusCommand                │   │
+│  │  │  ├─ AddCommand, SubtractCommand, MultiplyCommand              │   │
+│  │  │  └─ CustomCommands (user-defined)                             │   │
+│  │  │                                                                │   │
+│  │  Interfaces (No Implementation):                                  │   │
+│  │  ├─ Logger                                                        │   │
+│  │  │  ├─ info(msg, data?)                                           │   │
+│  │  │  ├─ warn(msg, data?)                                           │   │
+│  │  │  ├─ error(msg, err?)                                           │   │
+│  │  │  └─ debug(msg, data?)                                          │   │
+│  │  │                                                                │   │
+│  │  ├─ ErrorHandler                                                  │   │
+│  │  │  ├─ handle(error): CommandResult                               │   │
+│  │  │  └─ format(error): string                                      │   │
+│  │  │                                                                │   │
+│  │  ├─ ConfigManager                                                 │   │
+│  │  │  ├─ get(key): string                                           │   │
+│  │  │  ├─ set(key, value)                                            │   │
+│  │  │  ├─ getAll(): Record<string, string>                           │   │
+│  │  │  └─ load(path?): Promise<void>                                 │   │
+│  │  │                                                                │   │
+│  │  ├─ CommandRegistry                                               │   │
+│  │  │  ├─ register(command): void                                    │   │
+│  │  │  ├─ get(name): Command | null                                  │   │
+│  │  │  ├─ getAll(): Command[]                                        │   │
+│  │  │  └─ exists(name): boolean                                      │   │
+│  │  │                                                                │   │
+│  │  ├─ CLIEngine                                                     │   │
+│  │  │  ├─ execute(args): CommandResult                               │   │
+│  │  │  └─ executeCommand(name, context): CommandResult               │   │
+│  │  │                                                                │   │
+│  │  ├─ IOHandler                                                     │   │
+│  │  │  ├─ readInput(): Promise<string>                               │   │
+│  │  │  ├─ writeOutput(data, format)                                  │   │
+│  │  │  └─ writeError(error)                                          │   │
+│  │  │                                                                │   │
+│  │  ├─ EventEmitter                                                  │   │
+│  │  │  ├─ emit(event, data?)                                         │   │
+│  │  │  ├─ on(event, callback)                                        │   │
+│  │  │  └─ off(event, callback)                                       │   │
+│  │  │                                                                │   │
+│  │  ├─ ServiceContainer                                              │   │
+│  │  │  ├─ register(key, service)                                     │   │
+│  │  │  ├─ get(key): any                                              │   │
+│  │  │  └─ has(key): boolean                                          │   │
+│  │  │                                                                │   │
+│  │  ├─ Plugin                                                        │   │
+│  │  │  ├─ initialize(container): Promise<void>                       │   │
+│  │  │  └─ shutdown(): Promise<void>                                  │   │
+│  │  │                                                                │   │
+│  │  Type Definitions:                                                │   │
+│  │  ├─ CLIContext { arguments, options, outputFormat, verbose }      │   │
+│  │  ├─ CommandResult { success, data, error, timestamp, time }       │   │
+│  │  └─ ToolParameter { name, type, description, required }           │   │
+│  │                                                                    │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                           │
+│  KEY: NO IMPLEMENTATION DETAILS HERE - ONLY CONTRACTS                    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                  LAYER 2: INFRASTRUCTURE (Implementations)               │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  infrastructure/                                                  │   │
+│  │                                                                    │   │
+│  │  ┌─Logger────────┐  ┌─ConfigManager──────┐  ┌─ErrorHandler──┐   │   │
+│  │  │ CLILogger     │  │ EnvConfigManager    │  │ CLIErrorHandler
+│  │  │ implements    │  │ implements          │  │ implements    │   │   │
+│  │  │ Logger        │  │ ConfigManager       │  │ ErrorHandler  │   │   │
+│  │  │               │  │                     │  │               │   │   │
+│  │  │ • info()      │  │ • loadFromEnv()     │  │ • handle()    │   │   │
+│  │  │ • warn()      │  │ • loadFromFile()    │  │ • format()    │   │   │
+│  │  │ • error()     │  │ • cacheConfig()     │  │ • isValidError│   │   │
+│  │  │ • debug()     │  │                     │  │               │   │   │
+│  │  └───────────────┘  └─────────────────────┘  └───────────────┘   │   │
+│  │                                                                    │   │
+│  │  ┌─CommandRegistry────┐  ┌─IOHandler──────┐                      │   │
+│  │  │ CommandRecordReg   │  │ CLIIOHandler    │                      │   │
+│  │  │ implements         │  │ implements      │                      │   │
+│  │  │ CommandRegistry    │  │ IOHandler       │                      │   │
+│  │  │                    │  │                 │                      │   │
+│  │  │ • register()       │  │ • readInput()   │                      │   │
+│  │  │ • get()            │  │ • writeOutput() │                      │   │
+│  │  │ • getAll()         │  │ • writeError()  │                      │   │
+│  │  │ • exists()         │  │                 │                      │   │
+│  │  │                    │  │ MockIOHandler   │                      │   │
+│  │  │ (HashMap-based)    │  │ (for testing)   │                      │   │
+│  │  └────────────────────┘  └─────────────────┘                      │   │
+│  │                                                                    │   │
+│  │  ┌─DIContainer────────┐  ┌─EventEmitter──────┐                   │   │
+│  │  │ DIContainer        │  │ CLIEventEmitter    │                   │   │
+│  │  │ implements         │  │ implements         │                   │   │
+│  │  │ ServiceContainer   │  │ EventEmitter       │                   │   │
+│  │  │                    │  │                    │                   │   │
+│  │  │ • register()       │  │ • emit()           │                   │   │
+│  │  │ • get()            │  │ • on()             │                   │   │
+│  │  │ • has()            │  │ • off()            │                   │   │
+│  │  │ • registerFactory()│  │                    │                   │   │
+│  │  │ • registerSingleton
+│  │  │                    │  │ Events:            │                   │   │
+│  │  │ Singletons:        │  │ • startup          │                   │   │
+│  │  │ • logger           │  │ • command:executed │                   │   │
+│  │  │ • config           │  │ • command:failed   │                   │   │
+│  │  │ • ioHandler        │  │ • plugin:loaded    │                   │   │
+│  │  │ • registry         │  │ • error            │                   │   │
+│  │  │ • errorHandler     │  │ • shutdown         │                   │   │
+│  │  │ • eventEmitter     │  │                    │                   │   │
+│  │  │ • ...and more      │  └────────────────────┘                   │   │
+│  │  └────────────────────┘                                           │   │
+│  │                                                                    │   │
+│  │  ┌─Validators─────────────────────────────────────────────────┐  │   │
+│  │  │ CLIInputValidator                                           │  │   │
+│  │  │ • parseArguments(args): CLIContext                          │  │   │
+│  │  │ • validate(input): ValidationResult                         │  │   │
+│  │  │                                                             │  │   │
+│  │  │ CLIOutputFormatter                                          │  │   │
+│  │  │ • format(result, format): string                            │  │   │
+│  │  │                                                             │  │   │
+│  │  │ Custom Error Types:                                         │  │   │
+│  │  │ • ValidationError                                           │  │   │
+│  │  │ • CommandNotFoundError                                      │  │   │
+│  │  │ • ConfigError                                               │  │   │
+│  │  │ • ToolError                                                 │  │   │
+│  │  └─────────────────────────────────────────────────────────────┘  │   │
+│  │                                                                    │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                           │
+│  KEY: IMPLEMENTS DOMAIN INTERFACES - CONCRETE IMPLEMENTATIONS           │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 LAYER 3: APPLICATION (Business Logic)                   │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  application/                                                     │   │
+│  │                                                                    │   │
+│  │  ┌─Bootstrap──────────────────────────────────────────────────┐  │   │
+│  │  │ CLIBootstrap                                               │  │   │
+│  │  │ • static create(): Promise<CLIApp>                         │  │   │
+│  │  │   └─ Initializes all services                              │  │   │
+│  │  │   └─ Creates DIContainer                                   │  │   │
+│  │  │   └─ Registers implementations                             │  │   │
+│  │  │   └─ Creates CLIEngine                                     │  │   │
+│  │  │   └─ Registers built-in commands                           │  │   │
+│  │  │   └─ Returns: { engine, container, registry, manager }     │  │   │
+│  │  └────────────────────────────────────────────────────────────┘  │   │
+│  │                                                                    │   │
+│  │  ┌─CLIEngine─────────────────────────────────────────────────┐  │   │
+│  │  │ StandardCLIEngine implements CLIEngine                     │  │   │
+│  │  │                                                            │  │   │
+│  │  │ Dependencies:                                              │  │   │
+│  │  │ • commandRegistry: CommandRegistry                         │  │   │
+│  │  │ • logger: Logger                                           │  │   │
+│  │  │ • errorHandler: ErrorHandler                               │  │   │
+│  │  │ • eventEmitter: EventEmitter                               │  │   │
+│  │  │ • validator: InputValidator                                │  │   │
+│  │  │ • formatter: OutputFormatter                               │  │   │
+│  │  │                                                            │  │   │
+│  │  │ Methods:                                                   │  │   │
+│  │  │ • execute(args): CommandResult                             │  │   │
+│  │  │ • executeCommand(name, context): CommandResult             │  │   │
+│  │  │                                                            │  │   │
+│  │  │ Flow:                                                      │  │   │
+│  │  │ 1. Parse arguments                                         │  │   │
+│  │  │ 2. Find command in registry                                │  │   │
+│  │  │ 3. Validate input                                          │  │   │
+│  │  │ 4. Execute command                                         │  │   │
+│  │  │ 5. Handle errors                                           │  │   │
+│  │  │ 6. Emit events                                             │  │   │
+│  │  │ 7. Return result                                           │  │   │
+│  │  └────────────────────────────────────────────────────────────┘  │   │
+│  │                                                                    │   │
+│  │  ┌─Built-in Commands────────────────────────────────────────┐  │   │
+│  │  │ HelpCommand                                               │  │   │
+│  │  │ • name: 'help'                                            │  │   │
+│  │  │ • execute(): Lists all commands                           │  │   │
+│  │  │                                                            │  │   │
+│  │  │ VersionCommand                                            │  │   │
+│  │  │ • name: 'version'                                         │  │   │
+│  │  │ • execute(): Show version                                 │  │   │
+│  │  │                                                            │  │   │
+│  │  │ StatusCommand                                             │  │   │
+│  │  │ • name: 'status'                                          │  │   │
+│  │  │ • execute(): Show system status                           │  │   │
+│  │  │                                                            │  │   │
+│  │  │ EchoCommand                                               │  │   │
+│  │  │ • name: 'echo'                                            │  │   │
+│  │  │ • execute(): Echo back input                              │  │   │
+│  │  │                                                            │  │   │
+│  │  │ Custom Commands (extend Command abstract class)            │  │   │
+│  │  └────────────────────────────────────────────────────────────┘  │   │
+│  │                                                                    │   │
+│  │  ┌─PluginManager────────────────────────────────────────────┐  │   │
+│  │  │ PluginManager                                             │  │   │
+│  │  │                                                            │  │   │
+│  │  │ • loadPlugin(name, plugin): Promise<void>                 │  │   │
+│  │  │ • unloadPlugin(name): Promise<void>                       │  │   │
+│  │  │ • getLoadedPlugins(): string[]                            │  │   │
+│  │  │ • isPluginLoaded(name): boolean                           │  │   │
+│  │  │                                                            │  │   │
+│  │  │ BasePlugin (abstract)                                      │  │   │
+│  │  │ ├─ initialize(container)                                  │  │   │
+│  │  │ └─ shutdown()                                             │  │   │
+│  │  │                                                            │  │   │
+│  │  │ Concrete Plugins:                                          │  │   │
+│  │  │ ├─ CalculatorPlugin (add, subtract, multiply)             │  │   │
+│  │  │ ├─ FileToolsPlugin (ls, read, write)                      │  │   │
+│  │  │ ├─ WebToolsPlugin (wget, post, parsehtml)                 │  │   │
+│  │  │ └─ DataToolsPlugin (validate, convert, aggregate)         │  │   │
+│  │  └────────────────────────────────────────────────────────────┘  │   │
+│  │                                                                    │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                           │
+│  KEY: ORCHESTRATES DOMAIN & INFRASTRUCTURE                             │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                  LAYER 4: ADAPTERS (External Integration)               │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  adapters/agentInterface.ts                                       │   │
+│  │                                                                    │   │
+│  │  ┌─AgentTool interface──────────────────────────────────────┐    │   │
+│  │  │ • name: string                                            │    │   │
+│  │  │ • description: string                                     │    │   │
+│  │  │ • parameters: ToolParameter[]                             │    │   │
+│  │  │ • execute(params): Promise<ToolResult>                    │    │   │
+│  │  └───────────────────────────────────────────────────────────┘    │   │
+│  │                                                                    │   │
+│  │  ┌─CLIAgent interface────────────────────────────────────────┐    │   │
+│  │  │ • execute(tool, params): Promise<ToolResult>              │    │   │
+│  │  │ • getTools(): AgentTool[]                                 │    │   │
+│  │  │ • getTool(name): AgentTool | null                         │    │   │
+│  │  │ • processRequest(nlp): Promise<ToolResult>                │    │   │
+│  │  └───────────────────────────────────────────────────────────┘    │   │
+│  │                                                                    │   │
+│  │  ┌─ProgrammaticCLIAgent──────────────────────────────────────┐    │   │
+│  │  │ implements CLIAgent                                        │    │   │
+│  │  │                                                            │    │   │
+│  │  │ Dependencies:                                              │    │   │
+│  │  │ • cliEngine: CLIEngine                                    │    │   │
+│  │  │ • commandRegistry: CommandRegistry                        │    │   │
+│  │  │                                                            │    │   │
+│  │  │ Features:                                                 │    │   │
+│  │  │ • Auto-builds tools from commands                         │    │   │
+│  │  │ • Parses command usage to parameters                      │    │   │
+│  │  │ • Executes commands from agent parameters                 │    │   │
+│  │  │ • Returns structured results                              │    │   │
+│  │  └───────────────────────────────────────────────────────────┘    │   │
+│  │                                                                    │   │
+│  │  ┌─CustomToolBuilder─────────────────────────────────────────┐    │   │
+│  │  │ Fluent API for building custom tools:                     │    │   │
+│  │  │                                                            │    │   │
+│  │  │ new CustomToolBuilder()                                   │    │   │
+│  │  │   .setName('mytool')                                      │    │   │
+│  │  │   .setDescription('...')                                  │    │   │
+│  │  │   .addParameter({ name, type, required, ... })           │    │   │
+│  │  │   .setExecutor(async (params) => { ... })                 │    │   │
+│  │  │   .build()                                                │    │   │
+│  │  │                                                            │    │   │
+│  │  │ Usage: Allows AI systems to create tools dynamically      │    │   │
+│  │  └───────────────────────────────────────────────────────────┘    │   │
+│  │                                                                    │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                           │
+│  KEY: BRIDGES CLI WITH EXTERNAL SYSTEMS (AI AGENTS)                    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│              LAYER 5: PLUGINS & EXAMPLES (User Extensions)              │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  plugins/                              examples/                  │   │
+│  │                                                                    │   │
+│  │  CalculatorPlugin                      agentUsage.ts              │   │
+│  │  • add, subtract, multiply           • AI agent integration       │   │
+│  │                                                                    │   │
+│  │  (Extensible)                         completeAppSetup.ts         │   │
+│  │                                      • Full app with plugins      │   │
+│  │                                                                    │   │
+│  │                                       toolPlugins.ts              │   │
+│  │                                      • File, Web, Data tools      │   │
+│  │                                                                    │   │
+│  │                                       advancedCommands.ts         │   │
+│  │                                      • Complex patterns           │   │
+│  │                                                                    │   │
+│  │                                       testing.ts                  │   │
+│  │                                      • Testing patterns           │   │
+│  │                                                                    │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                           │
+│  KEY: USER CODE - CAN BE ADDED WITHOUT MODIFYING CORE                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════
+
+COMMAND EXECUTION FLOW:
+
+1. User Input: npm start add 5 3
+                    ↓
+2. Parse Arguments: ['add', '5', '3']
+                    ↓
+3. CLIEngine.execute(['add', '5', '3'])
+   ├─ CLIInputValidator.parseArguments()
+   └─ CLIContext { arguments: ['5', '3'], ... }
+                    ↓
+4. Find Command: CommandRegistry.get('add')
+   └─ AddCommand instance
+                    ↓
+5. Validate: AddCommand.validate(context)
+   └─ { valid: true, errors: [] } OR { valid: false, errors: [...] }
+                    ↓
+6. Execute: AddCommand.execute(context)
+   └─ CommandResult { success: true, data: { result: 8 }, ... }
+                    ↓
+7. Format: OutputFormatter.format(result, 'text'|'json')
+   └─ String output
+                    ↓
+8. Output: IOHandler.writeOutput(formatted)
+   └─ Display to user
+                    ↓
+9. Events: EventEmitter.emit('command:executed', data)
+   └─ Notify listeners
+
+═════════════════════════════════════════════════════════════════════════════
+
+DEPENDENCY FLOW (Shows Dependency Inversion):
+
+┌─────────────────────────────────────────────────────────────┐
+│ CLIEngine (High-Level)                                      │
+│ ├─ depends on ─────────────────────────────────────────┐    │
+│ │                                                        │    │
+│ │  Abstractions (Interfaces):                           │    │
+│ ├─→ Logger (interface)                                 │    │
+│ ├─→ ErrorHandler (interface)                           │    │
+│ ├─→ CommandRegistry (interface)                        │    │
+│ ├─→ EventEmitter (interface)                           │    │
+│ ├─→ InputValidator (interface)                         │    │
+│ └─→ OutputFormatter (interface)                        │    │
+│                                                        │    │
+│    Concrete Implementations (Low-Level):                └────
+│    ├─→ CLILogger                                           │
+│    ├─→ CLIErrorHandler                                     │
+│    ├─→ CommandRecordRegistry                               │
+│    ├─→ CLIEventEmitter                                     │
+│    ├─→ CLIInputValidator                                   │
+│    └─→ CLIOutputFormatter                                  │
+│                                                            │
+│    => Swappable, testable, maintainable                    │
+│    => NO tight coupling                                    │
+│    => Implements DEPENDENCY INVERSION PRINCIPLE            │
+└────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════
+
+AI AGENT INTEGRATION:
+
+┌─────────────────────────────────────────────────────────────┐
+│ AI System (Chat, LLM, etc.)                                │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+        ┌───────────────────────────────────────┐
+        │ ProgrammaticCLIAgent                  │
+        │ • execute(tool, params)               │
+        │ • getTools()                          │
+        │ • getTool(name)                       │
+        └───────────────────────────────────────┘
+                            ↓
+        ┌───────────────────────────────────────┐
+        │ Tool List (for function calling)       │
+        │ [                                     │
+        │   { name: 'add', params: [...] },     │
+        │   { name: 'subtract', params: [...] } │
+        │ ]                                     │
+        └───────────────────────────────────────┘
+                            ↓
+        ┌───────────────────────────────────────┐
+        │ CLIEngine.executeCommand()             │
+        │ └─ Run tool with agent params          │
+        └───────────────────────────────────────┘
+                            ↓
+        ┌───────────────────────────────────────┐
+        │ CommandResult (back to AI)            │
+        │ { success, data, error, etc. }        │
+        └───────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════
+
+KEY FILES:
+
+Domain (Contracts):
+  └─ src/domain/types.ts              (100% interfaces, no implementation)
+
+Infrastructure (Implementations):
+  └─ src/infrastructure/
+     ├─ logger.ts                     (Logger interface → CLILogger)
+     ├─ errorHandler.ts               (ErrorHandler → CLIErrorHandler)
+     ├─ configManager.ts              (ConfigManager → EnvConfigManager)
+     ├─ ioHandler.ts                  (IOHandler → CLIIOHandler)
+     ├─ commandRegistry.ts            (Registry pattern)
+     ├─ diContainer.ts                (Dependency injection)
+     ├─ validators.ts                 (Input/Output formatting)
+     └─ eventEmitter.ts               (Pub/Sub system)
+
+Application (Business Logic):
+  └─ src/application/
+     ├─ bootstrap.ts                  (App initialization)
+     ├─ cliEngine.ts                  (Orchestration)
+     ├─ builtinCommands.ts            (help, version, status, echo)
+     └─ pluginManager.ts              (Plugin lifecycle)
+
+Adapters (External Integration):
+  └─ src/adapters/
+     └─ agentInterface.ts             (AI agent integration)
+
+Plugins (Extensions):
+  └─ src/plugins/
+     └─ calculatorPlugin.ts           (Example plugin)
+
+Examples (Usage Patterns):
+  └─ examples/
+     ├─ agentUsage.ts                 (AI agent example)
+     ├─ advancedCommands.ts           (Complex patterns)
+     ├─ completeAppSetup.ts           (Full app)
+     ├─ testing.ts                    (Test patterns)
+     └─ toolPlugins.ts                (Tool examples)
+
+Documentation:
+  ├─ README.md                        (Complete guide)
+  ├─ ARCHITECTURE.md                  (Deep dive)
+  ├─ QUICKSTART.md                    (5-minute start)
+  └─ PROJECT_SUMMARY.md               (Overview)
+
+═════════════════════════════════════════════════════════════════════════════
+
+SOLID PRINCIPLES SUMMARY:
+
+S - Single Responsibility
+  Each class has ONE reason to change
+  Example: Logger only logs, doesn't format or route
+
+O - Open/Closed
+  Open for extension, closed for modification
+  Example: Add commands without changing CLIEngine
+
+L - Liskov Substitution
+  Subtypes substitute for base types
+  Example: Any Command works with CLIEngine
+
+I - Interface Segregation
+  Depend on focused interfaces
+  Example: Logger, not "FrameworkInterface" with 50 methods
+
+D - Dependency Inversion
+  Depend on abstractions, not concretions
+  Example: CLIEngine → Logger (abstract), not CLILogger (concrete)
+
+═════════════════════════════════════════════════════════════════════════════
+```
+
+This diagram shows the complete layered architecture with data flow and 
+integration patterns. Each layer builds upon the previous, maintaining 
+separation of concerns and SOLID principles throughout.
